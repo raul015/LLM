@@ -26,3 +26,18 @@ Riempire i campi con i propri dati e successivamente da terminale fare . file.sh
 
 ## generale
 Mi collego ad un database locale con postgres ed allo stesso tempo faccio un setup del modell MLL tramite API_KEY
+
+## generale_2 
+
+Primo approccio collegamento con llm
+
+## generale_3
+
+Contiene tutto, anche i test svolti per sistemare alcune query che il modello sbagliava 
+
+
+## main 
+Sviluppo di una veloce interfaccia con Streamlit ed il progetto è stato suddiviso tra le classi:
+-   langchain_test.py
+-   shots.py
+-   main.py
