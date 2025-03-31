@@ -151,11 +151,11 @@ def get_agent():
     # Scegli un modello disponibile per la tua API Key
     model_name = "gemini-2.0-flash-001"  
 
-    # Inizializza il modello con LangChain
-    llm = GoogleGenerativeAI(model=model_name, api_key=api_key)
+    # Inizializza il modello con LangChain(Framework) per l'utilizzo del modello llm GEMINI 
+    llm = GoogleGenerativeAI(model=model_name, api_key=api_key) # llm ha il metodo invoke per inserire il prompt tramite stringa 
     
     
-    toolkit = SQLDatabaseToolkit(db=db, llm=llm)
+    toolkit = SQLDatabaseToolkit(db=db, llm=llm)    # db chain 
 
     # db agent è qualcosa di nuovo che non ho ancora visto,
     # nelle versioni precedenti non c'era infatti molte funzioni
@@ -167,28 +167,53 @@ def get_agent():
     # agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
     # verbose=True)
 
+
+    # HuggingFaceEmbeddings  --> Utilizzato per generare gli embeddings, ovvero per la codifica
+
     embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-l6-v2',
             model_kwargs={'device': 'cpu'})
     
 
     # Convert few_shots into strings for vectorization
+    '''
+        Quindi creo una lista di stringhe a partire da un elenco di dizionari,
+        attraversa ogni dizionario (example) in few_shots 
+        example.values restituisce una vista dei valori del dizionario (example)
+        str(value) converte ogn elemento del dizionario in una stringa 
+        join unisce tutti i valori (convertiti in stringhe) con uno spaazio "" 
+        come separatore. Quindi tutti i valori di un dizionario vengono concatenati in una singola
+        stringa e separati da uno spazio
+
+    
+    '''
+
     to_vectorize = [" ".join(str(value) for value in example.values()) for example in few_shots]
     print("First vectorized example:", to_vectorize[0])
 
+    # Creazione Vector Database 
     vectorsStore = Chroma.from_texts(
     texts=to_vectorize,
     embedding=embeddings,
     metadatas=few_shots  # Ensure metadatas are dictionaries
     )
 
-    # Initialize example selector
+    # Initialize example selector, dammi due esempi simili per ogni richiesta
     example_selector = SemanticSimilarityExampleSelector(
         vectorstore=vectorsStore,
         k=2  # Get the 2 most similar examples
     )
+    # 
     selected_examples = example_selector.select_examples({"question": "Quante Tshirts Adidas sono rimaste nello store?"})
 
+    PROMPT_SUFFIX_2 = """ 
+    Only use the following tables: 
+    {table_info}
+    Question: {inputs}"""
+
+
     PROMPT_SUFFIX = """
+
+
     Use the following format:
 
     Question: "Your question here"
@@ -199,6 +224,7 @@ def get_agent():
 
     _mysql_prompt = """
     You are an AI assistant that translates natural language questions into MySQL queries.
+    Use only the tables info and answer only with the data
     """
 
     # Question è un placeholder che verrà sostituito dalla domanda dell'utente
@@ -213,6 +239,11 @@ def get_agent():
         """
     )
 
+
+    """
+    example_selector=example_selector dice al modello che se è confuso di guardare il vector DB 
+    example_prompt=example_prompt esempio di prompt
+    """
     few_shot_prompt = FewShotPromptTemplate(
     example_selector=example_selector,
     example_prompt=example_prompt,
@@ -225,7 +256,7 @@ def get_agent():
 
     db_agent = create_sql_agent(
         llm=llm,
-        toolkit=toolkit,
+        toolkit=chain,
         agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True)
     return db_agent

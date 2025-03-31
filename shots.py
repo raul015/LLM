@@ -1,4 +1,4 @@
-
+# few shot learning, per allenare il modello a domande in cui sbaglia 
 few_shots = [  
     {
          'Question': "Quante t-shirt Nike di colore white ho disponibili?",
